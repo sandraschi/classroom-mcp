@@ -1,0 +1,12 @@
+__pycache__/
+*.pyc
+.venv/
+.env
+*.db
+data/
+dist/
+build/
+web_sota/node_modules/
+web_sota/dist/
+.ruff_cache/
+.pytest_cache/
