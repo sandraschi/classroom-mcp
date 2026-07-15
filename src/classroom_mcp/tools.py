@@ -13,6 +13,13 @@ from classroom_mcp.database import (
     agent_delete as _del_agent,
     agent_list as _list_agents,
     agent_upsert as _upsert_agent,
+    human_teacher_delete as _del_ht,
+    human_teacher_get as _get_ht,
+    human_teacher_list as _list_ht,
+    human_teacher_upsert as _upsert_ht,
+    referral_create as _create_ref,
+    referral_list as _list_refs,
+    referral_update_status as _update_ref,
     assignment_create as _create_a,
     assignment_delete as _delete_a,
     assignment_list as _list_a,
@@ -349,6 +356,75 @@ async def agent_list(course_id: int) -> dict:
 async def agent_delete(agent_id: int) -> dict:
     """Remove a teaching agent."""
     return {"success": await _del_agent(agent_id)}
+
+
+@mcp.tool(annotations=_MUTATING)
+async def human_teacher_create(
+    name: str,
+    email: str = "",
+    bio: str = "",
+    languages: str = "",
+    specializations: str = "",
+    rate_per_hour: float = 30,
+    currency: str = "EUR",
+) -> dict:
+    """Register a human teacher (freelance or school-affiliated)."""
+    import json
+
+    lang_list = [lang.strip() for lang in languages.split(",") if lang.strip()] if languages else []
+    spec_list = (
+        [sk.strip() for sk in specializations.split(",") if sk.strip()] if specializations else []
+    )
+    return await _upsert_ht(
+        {
+            "name": name,
+            "email": email,
+            "bio": bio,
+            "languages": json.dumps(lang_list),
+            "specializations": json.dumps(spec_list),
+            "rate_per_hour": rate_per_hour,
+            "currency": currency,
+        }
+    )
+
+
+@mcp.tool(annotations=_READ_ONLY)
+async def human_teacher_list(available_only: bool = True) -> dict:
+    """List registered human teachers, optionally only available ones."""
+    teachers = await _list_ht(available_only=available_only)
+    return {"success": True, "teachers": teachers, "count": len(teachers)}
+
+
+@mcp.tool(annotations=_READ_ONLY)
+async def human_teacher_get(teacher_id: int) -> dict:
+    """Get a human teacher by ID."""
+    return await _get_ht(teacher_id)
+
+
+@mcp.tool(annotations=_MUTATING)
+async def human_teacher_delete(teacher_id: int) -> dict:
+    """Remove a human teacher."""
+    return {"success": await _del_ht(teacher_id)}
+
+
+@mcp.tool(annotations=_MUTATING)
+async def referral_create(student_id: int, teacher_id: int, reason: str = "") -> dict:
+    """Refer a student to a human teacher when the AI detects a need."""
+    return await _create_ref({"student_id": student_id, "teacher_id": teacher_id, "reason": reason})
+
+
+@mcp.tool(annotations=_READ_ONLY)
+async def referral_list(teacher_id: int = 0, status: str = "") -> dict:
+    """List referrals, filtered by teacher or status (pending/booked/completed)."""
+    tid = teacher_id if teacher_id > 0 else None
+    refs = await _list_refs(teacher_id=tid, status=status)
+    return {"success": True, "referrals": refs, "count": len(refs)}
+
+
+@mcp.tool(annotations=_MUTATING)
+async def referral_update_status(referral_id: int, status: str) -> dict:
+    """Update referral status: pending → booked → completed → cancelled."""
+    return await _update_ref(referral_id, status)
 
 
 def main():

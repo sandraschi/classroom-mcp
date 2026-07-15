@@ -89,6 +89,28 @@ CREATE TABLE IF NOT EXISTS courseware (
     created_at      TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
+CREATE TABLE IF NOT EXISTS human_teachers (
+    id              INTEGER PRIMARY KEY AUTOINCREMENT,
+    name            TEXT NOT NULL,
+    email           TEXT UNIQUE,
+    bio             TEXT DEFAULT '',
+    languages       TEXT DEFAULT '[]',
+    specializations TEXT DEFAULT '[]',
+    rate_per_hour   REAL DEFAULT 30,
+    currency        TEXT DEFAULT 'EUR',
+    available       INTEGER DEFAULT 1,
+    created_at      TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS referrals (
+    id              INTEGER PRIMARY KEY AUTOINCREMENT,
+    student_id      INTEGER REFERENCES students(id),
+    teacher_id      INTEGER REFERENCES human_teachers(id),
+    reason          TEXT DEFAULT '',
+    status          TEXT DEFAULT 'pending',
+    created_at      TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
 CREATE TABLE IF NOT EXISTS teaching_agents (
     id              INTEGER PRIMARY KEY AUTOINCREMENT,
     course_id       INTEGER REFERENCES courses(id),
@@ -337,6 +359,102 @@ async def agent_delete(agent_id: int) -> bool:
         cur = await db.execute("DELETE FROM teaching_agents WHERE id=?", (agent_id,))
         await db.commit()
         return cur.rowcount > 0
+
+
+# ── Human Teachers ──
+
+
+async def human_teacher_upsert(data: dict) -> dict:
+    async with get_db() as db:
+        try:
+            cur = await db.execute(
+                "INSERT INTO human_teachers (name, email, bio, languages, specializations, rate_per_hour, currency) VALUES (?,?,?,?,?,?,?)",
+                (
+                    data["name"],
+                    data.get("email", ""),
+                    data.get("bio", ""),
+                    data.get("languages", "[]"),
+                    data.get("specializations", "[]"),
+                    data.get("rate_per_hour", 30),
+                    data.get("currency", "EUR"),
+                ),
+            )
+            await db.commit()
+            return {"success": True, "teacher": {"id": cur.lastrowid, "name": data["name"]}}
+        except Exception:
+            await db.execute(
+                "UPDATE human_teachers SET bio=?, languages=?, specializations=?, rate_per_hour=?, currency=? WHERE email=?",
+                (
+                    data.get("bio", ""),
+                    data.get("languages", "[]"),
+                    data.get("specializations", "[]"),
+                    data.get("rate_per_hour", 30),
+                    data.get("currency", "EUR"),
+                    data.get("email", ""),
+                ),
+            )
+            await db.commit()
+            return {"success": True, "teacher": {"email": data.get("email", "")}}
+
+
+async def human_teacher_list(available_only: bool = True) -> list[dict]:
+    async with get_db() as db:
+        if available_only:
+            cur = await db.execute("SELECT * FROM human_teachers WHERE available=1 ORDER BY name")
+        else:
+            cur = await db.execute("SELECT * FROM human_teachers ORDER BY name")
+        return [dict(r) for r in await cur.fetchall()]
+
+
+async def human_teacher_get(teacher_id: int) -> dict:
+    async with get_db() as db:
+        cur = await db.execute("SELECT * FROM human_teachers WHERE id=?", (teacher_id,))
+        row = await cur.fetchone()
+        if not row:
+            return {"success": False, "error": "Teacher not found"}
+        return {"success": True, "teacher": dict(row)}
+
+
+async def human_teacher_delete(teacher_id: int) -> bool:
+    async with get_db() as db:
+        cur = await db.execute("DELETE FROM human_teachers WHERE id=?", (teacher_id,))
+        await db.commit()
+        return cur.rowcount > 0
+
+
+# ── Referrals ──
+
+
+async def referral_create(data: dict) -> dict:
+    async with get_db() as db:
+        cur = await db.execute(
+            "INSERT INTO referrals (student_id, teacher_id, reason) VALUES (?,?,?)",
+            (data["student_id"], data["teacher_id"], data.get("reason", "")),
+        )
+        await db.commit()
+        return {"success": True, "referral": {"id": cur.lastrowid}}
+
+
+async def referral_list(teacher_id: int | None = None, status: str = "") -> list[dict]:
+    async with get_db() as db:
+        if teacher_id:
+            cur = await db.execute(
+                "SELECT r.*, s.name as student_name FROM referrals r JOIN students s ON s.id=r.student_id WHERE r.teacher_id=? AND (?='' OR r.status=?) ORDER BY r.created_at DESC",
+                (teacher_id, status, status),
+            )
+        else:
+            cur = await db.execute(
+                "SELECT r.*, s.name as student_name, t.name as teacher_name FROM referrals r JOIN students s ON s.id=r.student_id JOIN human_teachers t ON t.id=r.teacher_id WHERE (?='' OR r.status=?) ORDER BY r.created_at DESC",
+                (status, status),
+            )
+        return [dict(r) for r in await cur.fetchall()]
+
+
+async def referral_update_status(referral_id: int, status: str) -> dict:
+    async with get_db() as db:
+        await db.execute("UPDATE referrals SET status=? WHERE id=?", (status, referral_id))
+        await db.commit()
+        return {"success": True}
 
 
 # ── Students ──
