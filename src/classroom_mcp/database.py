@@ -55,6 +55,51 @@ async def _get_pooled_connection() -> aiosqlite.Connection:
 
 
 SCHEMA = """
+CREATE TABLE IF NOT EXISTS courses (
+    id              INTEGER PRIMARY KEY AUTOINCREMENT,
+    code            TEXT NOT NULL UNIQUE,
+    title           TEXT NOT NULL,
+    description     TEXT DEFAULT '',
+    subject         TEXT DEFAULT '',
+    level           TEXT DEFAULT 'undergraduate',
+    credits         INTEGER DEFAULT 3,
+    total_modules   INTEGER DEFAULT 0,
+    created_at      TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS modules (
+    id              INTEGER PRIMARY KEY AUTOINCREMENT,
+    course_id       INTEGER REFERENCES courses(id),
+    title           TEXT NOT NULL,
+    sequence        INTEGER NOT NULL,
+    description     TEXT DEFAULT '',
+    learning_objectives TEXT DEFAULT '[]',
+    created_at      TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS courseware (
+    id              INTEGER PRIMARY KEY AUTOINCREMENT,
+    module_id       INTEGER REFERENCES modules(id),
+    type            TEXT NOT NULL DEFAULT 'lecture',
+    title           TEXT NOT NULL,
+    content         TEXT DEFAULT '',
+    source          TEXT DEFAULT 'ai_generated',
+    duration_min    INTEGER DEFAULT 0,
+    sequence        INTEGER DEFAULT 0,
+    created_at      TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS teaching_agents (
+    id              INTEGER PRIMARY KEY AUTOINCREMENT,
+    course_id       INTEGER REFERENCES courses(id),
+    role            TEXT NOT NULL DEFAULT 'tutor',
+    name            TEXT NOT NULL,
+    persona         TEXT DEFAULT '',
+    model           TEXT DEFAULT 'llama3.2:3b',
+    active          INTEGER DEFAULT 1,
+    created_at      TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
 CREATE TABLE IF NOT EXISTS students (
     id          INTEGER PRIMARY KEY AUTOINCREMENT,
     name        TEXT NOT NULL,
@@ -119,6 +164,179 @@ async def init_db() -> None:
             await db.executescript(SCHEMA)
             await db.commit()
         _db_initialized = True
+
+
+# ── Courses ──
+
+
+async def course_upsert(data: dict) -> dict:
+    async with get_db() as db:
+        try:
+            cur = await db.execute(
+                "INSERT INTO courses (code, title, description, subject, level, credits) VALUES (?,?,?,?,?,?)",
+                (
+                    data["code"],
+                    data["title"],
+                    data.get("description", ""),
+                    data.get("subject", ""),
+                    data.get("level", "undergraduate"),
+                    data.get("credits", 3),
+                ),
+            )
+            await db.commit()
+            return {"success": True, "course": {"id": cur.lastrowid, "code": data["code"]}}
+        except Exception as e:
+            return {"success": False, "error": str(e)}
+
+
+async def course_list(subject: str = "") -> list[dict]:
+    async with get_db() as db:
+        if subject:
+            cur = await db.execute(
+                "SELECT * FROM courses WHERE subject=? ORDER BY code", (subject,)
+            )
+        else:
+            cur = await db.execute("SELECT * FROM courses ORDER BY code")
+        return [dict(r) for r in await cur.fetchall()]
+
+
+async def course_get(course_id: int) -> dict:
+    async with get_db() as db:
+        cur = await db.execute("SELECT * FROM courses WHERE id=?", (course_id,))
+        row = await cur.fetchone()
+        if not row:
+            return {"success": False, "error": "Course not found"}
+        return {"success": True, "course": dict(row)}
+
+
+async def course_delete(course_id: int) -> bool:
+    async with get_db() as db:
+        cur = await db.execute("DELETE FROM courses WHERE id=?", (course_id,))
+        await db.commit()
+        return cur.rowcount > 0
+
+
+# ── Modules ──
+
+
+async def module_create(data: dict) -> dict:
+    async with get_db() as db:
+        cur = await db.execute(
+            "INSERT INTO modules (course_id, title, sequence, description, learning_objectives) VALUES (?,?,?,?,?)",
+            (
+                data["course_id"],
+                data["title"],
+                data.get("sequence", 1),
+                data.get("description", ""),
+                data.get("learning_objectives", "[]"),
+            ),
+        )
+        await db.commit()
+        await db.execute(
+            "UPDATE courses SET total_modules=total_modules+1 WHERE id=?", (data["course_id"],)
+        )
+        await db.commit()
+        return {"success": True, "module": {"id": cur.lastrowid}}
+
+
+async def module_list(course_id: int) -> list[dict]:
+    async with get_db() as db:
+        cur = await db.execute(
+            "SELECT * FROM modules WHERE course_id=? ORDER BY sequence", (course_id,)
+        )
+        return [dict(r) for r in await cur.fetchall()]
+
+
+async def module_delete(module_id: int) -> bool:
+    async with get_db() as db:
+        cur = await db.execute("DELETE FROM modules WHERE id=?", (module_id,))
+        await db.commit()
+        return cur.rowcount > 0
+
+
+# ── Courseware ──
+
+
+async def courseware_create(data: dict) -> dict:
+    async with get_db() as db:
+        cur = await db.execute(
+            "INSERT INTO courseware (module_id, type, title, content, source, duration_min, sequence) VALUES (?,?,?,?,?,?,?)",
+            (
+                data["module_id"],
+                data.get("type", "lecture"),
+                data["title"],
+                data.get("content", ""),
+                data.get("source", "ai_generated"),
+                data.get("duration_min", 0),
+                data.get("sequence", 0),
+            ),
+        )
+        await db.commit()
+        return {"success": True, "courseware": {"id": cur.lastrowid}}
+
+
+async def courseware_list(module_id: int) -> list[dict]:
+    async with get_db() as db:
+        cur = await db.execute(
+            "SELECT * FROM courseware WHERE module_id=? ORDER BY sequence", (module_id,)
+        )
+        return [dict(r) for r in await cur.fetchall()]
+
+
+async def courseware_delete(courseware_id: int) -> bool:
+    async with get_db() as db:
+        cur = await db.execute("DELETE FROM courseware WHERE id=?", (courseware_id,))
+        await db.commit()
+        return cur.rowcount > 0
+
+
+# ── Teaching Agents ──
+
+
+async def agent_upsert(data: dict) -> dict:
+    async with get_db() as db:
+        try:
+            cur = await db.execute(
+                "INSERT INTO teaching_agents (course_id, role, name, persona, model) VALUES (?,?,?,?,?)",
+                (
+                    data["course_id"],
+                    data.get("role", "tutor"),
+                    data["name"],
+                    data.get("persona", ""),
+                    data.get("model", "llama3.2:3b"),
+                ),
+            )
+            await db.commit()
+            return {"success": True, "agent": {"id": cur.lastrowid}}
+        except Exception:
+            await db.execute(
+                "UPDATE teaching_agents SET role=?, persona=?, model=? WHERE course_id=? AND name=?",
+                (
+                    data.get("role", "tutor"),
+                    data.get("persona", ""),
+                    data.get("model", "llama3.2:3b"),
+                    data["course_id"],
+                    data["name"],
+                ),
+            )
+            await db.commit()
+            return {"success": True, "agent": {"name": data["name"]}}
+
+
+async def agent_list(course_id: int) -> list[dict]:
+    async with get_db() as db:
+        cur = await db.execute(
+            "SELECT * FROM teaching_agents WHERE course_id=? AND active=1 ORDER BY role",
+            (course_id,),
+        )
+        return [dict(r) for r in await cur.fetchall()]
+
+
+async def agent_delete(agent_id: int) -> bool:
+    async with get_db() as db:
+        cur = await db.execute("DELETE FROM teaching_agents WHERE id=?", (agent_id,))
+        await db.commit()
+        return cur.rowcount > 0
 
 
 # ── Students ──
