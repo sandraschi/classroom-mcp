@@ -5,6 +5,7 @@ generation fails for any reason, it must NOT create a bare assignment and
 report success anyway — see CHANGELOG 0.2.0 for why (it silently did
 exactly that until this fix).
 """
+
 from __future__ import annotations
 
 import pytest
@@ -15,9 +16,9 @@ class TestLearnbotBridge:
 
     @pytest.mark.asyncio
     async def test_fails_cleanly_when_learnbot_unreachable(self, db, monkeypatch):
-        from classroom_mcp.database import class_upsert, student_upsert, class_add_student
-        from classroom_mcp.tools import assignment_create_with_lesson
         from classroom_mcp.config import clear_settings_cache
+        from classroom_mcp.database import class_add_student, class_upsert, student_upsert
+        from classroom_mcp.tools import assignment_create_with_lesson
 
         monkeypatch.setenv("LEARNBOT_URL", "http://127.0.0.1:11999")
         clear_settings_cache()
@@ -60,6 +61,7 @@ class TestLearnbotBridge:
         404ing in production like it did before this fix.
         """
         import inspect
+
         from classroom_mcp import tools
 
         src = inspect.getsource(tools.assignment_create_with_lesson)

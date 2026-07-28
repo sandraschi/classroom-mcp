@@ -1,4 +1,5 @@
 """Test student_upsert email collision handling."""
+
 from __future__ import annotations
 
 import pytest
@@ -9,10 +10,16 @@ class TestStudentUpsert:
 
     @pytest.mark.asyncio
     async def test_create_then_update_by_email(self, db):
-        from classroom_mcp.database import student_upsert, student_get
+        from classroom_mcp.database import student_get, student_upsert
 
         r1 = await student_upsert(
-            {"name": "Ali", "email": "ali@test.at", "language": "ar", "level": "A1", "framework": "CEFR"}
+            {
+                "name": "Ali",
+                "email": "ali@test.at",
+                "language": "ar",
+                "level": "A1",
+                "framework": "CEFR",
+            }
         )
         assert r1["success"] is True
         sid = r1["student"]["id"]
@@ -25,7 +32,7 @@ class TestStudentUpsert:
 
     @pytest.mark.asyncio
     async def test_upsert_same_email_updates_not_duplicates(self, db):
-        from classroom_mcp.database import student_upsert, student_list
+        from classroom_mcp.database import student_list, student_upsert
 
         r1 = await student_upsert(
             {"name": "Ali", "email": "ali@test.at", "language": "ar", "level": "A1"}
@@ -45,7 +52,7 @@ class TestStudentUpsert:
 
     @pytest.mark.asyncio
     async def test_upsert_without_email_creates_separate(self, db):
-        from classroom_mcp.database import student_upsert, student_list
+        from classroom_mcp.database import student_upsert
 
         r1 = await student_upsert({"name": "No Email", "language": "de"})
         assert r1["success"] is True
@@ -56,10 +63,16 @@ class TestStudentUpsert:
 
     @pytest.mark.asyncio
     async def test_student_update_preserves_framework(self, db):
-        from classroom_mcp.database import student_upsert, student_update, student_get
+        from classroom_mcp.database import student_get, student_update, student_upsert
 
         r = await student_upsert(
-            {"name": "Test", "email": "t@t.at", "language": "ar", "level": "A1", "framework": "CEFR"}
+            {
+                "name": "Test",
+                "email": "t@t.at",
+                "language": "ar",
+                "level": "A1",
+                "framework": "CEFR",
+            }
         )
         sid = r["student"]["id"]
 

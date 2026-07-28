@@ -11,43 +11,119 @@ from classroom_mcp._version import __version__
 from classroom_mcp.config import get_settings
 from classroom_mcp.database import (
     agent_delete as _del_agent,
+)
+from classroom_mcp.database import (
     agent_list as _list_agents,
+)
+from classroom_mcp.database import (
     agent_upsert as _upsert_agent,
-    class_update as _update_c,
-    course_update as _update_course,
-    human_teacher_delete as _del_ht,
-    human_teacher_get as _get_ht,
-    human_teacher_list as _list_ht,
-    human_teacher_upsert as _upsert_ht,
-    referral_create as _create_ref,
-    referral_list as _list_refs,
-    referral_update_status as _update_ref,
+)
+from classroom_mcp.database import (
     assignment_create as _create_a,
+)
+from classroom_mcp.database import (
     assignment_delete as _delete_a,
+)
+from classroom_mcp.database import (
     assignment_list as _list_a,
+)
+from classroom_mcp.database import (
     class_add_student as _add_s,
+)
+from classroom_mcp.database import (
     class_delete as _delete_c,
+)
+from classroom_mcp.database import (
     class_get as _get_c,
+)
+from classroom_mcp.database import (
     class_list as _list_c,
+)
+from classroom_mcp.database import (
     class_remove_student as _remove_s,
+)
+from classroom_mcp.database import (
+    class_update as _update_c,
+)
+from classroom_mcp.database import (
     class_upsert as _upsert_c,
+)
+from classroom_mcp.database import (
     course_delete as _del_course,
+)
+from classroom_mcp.database import (
     course_get as _get_course,
+)
+from classroom_mcp.database import (
     course_list as _list_courses,
+)
+from classroom_mcp.database import (
+    course_update as _update_course,
+)
+from classroom_mcp.database import (
     course_upsert as _upsert_course,
+)
+from classroom_mcp.database import (
     courseware_create as _create_cw,
+)
+from classroom_mcp.database import (
     courseware_delete as _del_cw,
+)
+from classroom_mcp.database import (
     courseware_list as _list_cw,
+)
+from classroom_mcp.database import (
+    human_teacher_delete as _del_ht,
+)
+from classroom_mcp.database import (
+    human_teacher_get as _get_ht,
+)
+from classroom_mcp.database import (
+    human_teacher_list as _list_ht,
+)
+from classroom_mcp.database import (
+    human_teacher_upsert as _upsert_ht,
+)
+from classroom_mcp.database import (
     init_db,
+)
+from classroom_mcp.database import (
     module_create as _create_mod,
+)
+from classroom_mcp.database import (
     module_delete as _del_mod,
+)
+from classroom_mcp.database import (
     module_list as _list_mods,
+)
+from classroom_mcp.database import (
     progress_list as _list_p,
+)
+from classroom_mcp.database import (
     progress_upsert as _upsert_p,
+)
+from classroom_mcp.database import (
+    referral_create as _create_ref,
+)
+from classroom_mcp.database import (
+    referral_list as _list_refs,
+)
+from classroom_mcp.database import (
+    referral_update_status as _update_ref,
+)
+from classroom_mcp.database import (
     student_delete as _delete_s,
+)
+from classroom_mcp.database import (
     student_get as _get_s,
+)
+from classroom_mcp.database import (
     student_list as _list_s,
+)
+from classroom_mcp.database import (
     student_update as _update_s,
+)
+from classroom_mcp.database import (
     student_upsert as _upsert_s,
 )
 
@@ -614,7 +690,11 @@ async def syllabus_generate(
     """
     from classroom_mcp.database import (
         course_get as _cg,
+    )
+    from classroom_mcp.database import (
         generated_content_save as _save,
+    )
+    from classroom_mcp.database import (
         module_create as _mc,
     )
 
@@ -709,7 +789,11 @@ async def courseware_generate_ai(
     """
     from classroom_mcp.database import (
         courseware_create as _ccw,
+    )
+    from classroom_mcp.database import (
         generated_content_save as _save,
+    )
+    from classroom_mcp.database import (
         module_list as _ml,
     )
 
