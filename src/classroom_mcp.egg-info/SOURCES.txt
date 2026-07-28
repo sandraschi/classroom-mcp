@@ -11,3 +11,5 @@ src/classroom_mcp.egg-info/SOURCES.txt
 src/classroom_mcp.egg-info/dependency_links.txt
 src/classroom_mcp.egg-info/requires.txt
 src/classroom_mcp.egg-info/top_level.txt
+tests/test_learnbot_bridge.py
+tests/test_student_upsert.py

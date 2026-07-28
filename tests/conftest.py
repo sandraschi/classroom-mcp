@@ -1,0 +1,21 @@
+"""Test configuration — temp DB for isolation."""
+
+from __future__ import annotations
+
+import pytest
+
+
+@pytest.fixture
+async def db(monkeypatch, tmp_path):
+    db_file = str(tmp_path / "test.db")
+    monkeypatch.setenv("DB_PATH", db_file)
+    from classroom_mcp.config import clear_settings_cache
+
+    clear_settings_cache()
+    from classroom_mcp.database import clear_db_init_guard, close_db_pool, init_db
+
+    await init_db()
+    yield
+    await close_db_pool()
+    clear_db_init_guard()
+    clear_settings_cache()

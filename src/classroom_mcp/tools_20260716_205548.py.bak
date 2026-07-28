@@ -781,14 +781,9 @@ async def assignment_create_with_lesson(
 ) -> dict:
     """Create an assignment and generate a corresponding lesson via learnbot-mcp.
 
-    Calls learnbot-mcp's lesson_generate to produce lesson content, then
-    creates the assignment linked to the generated lesson. This tool's
-    contract is "assignment WITH lesson" — if lesson generation fails for
-    any reason (learnbot unreachable, HTTP error, learnbot reports its own
-    failure), this returns success: False and does NOT create the
-    assignment. A bare assignment with no lesson is not what was asked
-    for, so it is not reported as a success. Requires learnbot-mcp running
-    and reachable at LEARNBOT_URL.
+    Calls learnbot-mcp's lesson_generate to produce lesson content,
+    then creates the assignment linked to the generated lesson.
+    Requires learnbot-mcp running (LEARNBOT_URL).
     """
     from classroom_mcp.database import assignment_create as _ac
 
@@ -804,10 +799,11 @@ async def assignment_create_with_lesson(
     learnbot = cfg.learnbot_url.rstrip("/")
     import httpx
 
+    lesson = None
     try:
         async with httpx.AsyncClient(timeout=httpx.Timeout(30.0)) as client:
             resp = await client.post(
-                f"{learnbot}/api/lesson/generate",
+                f"{learnbot}/api/lessons/generate",
                 json={
                     "title": title,
                     "language": target_lang,
@@ -816,39 +812,25 @@ async def assignment_create_with_lesson(
                     "duration_min": 30,
                 },
             )
-    except httpx.RequestError as e:
-        return {
-            "success": False,
-            "error": f"Could not reach learnbot-mcp at {learnbot}: {e}",
-        }
-
-    if resp.status_code != 200:
-        return {
-            "success": False,
-            "error": f"learnbot-mcp lesson generation failed: HTTP {resp.status_code} - {resp.text[:200]}",
-        }
-
-    lesson = resp.json()
-    if not lesson.get("success"):
-        return {
-            "success": False,
-            "error": f"learnbot-mcp reported lesson generation failure: {lesson.get('error', 'unknown error')}",
-        }
+            if resp.status_code == 200:
+                lesson = resp.json()
+    except Exception:
+        pass
 
     result = await _ac(
         {
             "class_id": class_id,
             "title": title,
             "description": description,
-            "lesson_id": lesson.get("lesson", {}).get("id", 0),
+            "lesson_id": lesson.get("lesson", {}).get("id", 0) if lesson else 0,
             "due_at": due_at,
             "max_score": max_score,
         }
     )
-    if not result.get("success"):
-        return result
 
-    result["generated_lesson"] = lesson.get("lesson", {})
+    if lesson:
+        result["generated_lesson"] = lesson.get("lesson", {})
+
     return result
 
 

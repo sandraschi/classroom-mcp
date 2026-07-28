@@ -129,7 +129,6 @@ CREATE TABLE IF NOT EXISTS students (
     token       TEXT DEFAULT '',
     language    TEXT DEFAULT 'ja',
     level       TEXT DEFAULT 'N4',
-    framework   TEXT DEFAULT 'JLPT',
     notes       TEXT DEFAULT '',
     active      INTEGER DEFAULT 1,
     created_at  TEXT NOT NULL DEFAULT (datetime('now')),
@@ -142,7 +141,6 @@ CREATE TABLE IF NOT EXISTS classes (
     description TEXT DEFAULT '',
     language    TEXT DEFAULT 'ja',
     level       TEXT DEFAULT 'N4',
-    framework   TEXT DEFAULT 'JLPT',
     schedule    TEXT DEFAULT '',
     created_at  TEXT NOT NULL DEFAULT (datetime('now'))
 );
@@ -162,17 +160,6 @@ CREATE TABLE IF NOT EXISTS assignments (
     due_at      TEXT,
     assigned_at TEXT NOT NULL DEFAULT (datetime('now')),
     max_score   REAL DEFAULT 100
-);
-
-CREATE TABLE IF NOT EXISTS generated_content (
-    id              INTEGER PRIMARY KEY AUTOINCREMENT,
-    module_id       INTEGER REFERENCES modules(id),
-    content_type    TEXT NOT NULL DEFAULT 'syllabus',
-    framework       TEXT DEFAULT '',
-    level           TEXT DEFAULT '',
-    prompt          TEXT DEFAULT '',
-    content         TEXT DEFAULT '',
-    created_at      TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
 CREATE TABLE IF NOT EXISTS progress (
@@ -242,32 +229,6 @@ async def course_get(course_id: int) -> dict:
         if not row:
             return {"success": False, "error": "Course not found"}
         return {"success": True, "course": dict(row)}
-
-
-async def course_update(course_id: int, data: dict[str, Any]) -> dict:
-    existing = await course_get(course_id)
-    if not existing.get("success"):
-        return existing
-    current = existing["course"]
-    merged = {**current, **{k: v for k, v in data.items() if v is not None}}
-    async with get_db() as db:
-        try:
-            await db.execute(
-                "UPDATE courses SET code=?, title=?, description=?, subject=?, level=?, credits=? WHERE id=?",
-                (
-                    merged["code"],
-                    merged["title"],
-                    merged["description"],
-                    merged["subject"],
-                    merged["level"],
-                    merged["credits"],
-                    course_id,
-                ),
-            )
-            await db.commit()
-        except aiosqlite.IntegrityError as e:
-            return {"success": False, "error": str(e)}
-    return await course_get(course_id)
 
 
 async def course_delete(course_id: int) -> bool:
@@ -410,7 +371,7 @@ async def human_teacher_upsert(data: dict) -> dict:
                 "INSERT INTO human_teachers (name, email, bio, languages, specializations, rate_per_hour, currency) VALUES (?,?,?,?,?,?,?)",
                 (
                     data["name"],
-                    data.get("email") or None,
+                    data.get("email", ""),
                     data.get("bio", ""),
                     data.get("languages", "[]"),
                     data.get("specializations", "[]"),
@@ -420,7 +381,7 @@ async def human_teacher_upsert(data: dict) -> dict:
             )
             await db.commit()
             return {"success": True, "teacher": {"id": cur.lastrowid, "name": data["name"]}}
-        except aiosqlite.IntegrityError:
+        except Exception:
             await db.execute(
                 "UPDATE human_teachers SET bio=?, languages=?, specializations=?, rate_per_hour=?, currency=? WHERE email=?",
                 (
@@ -429,11 +390,11 @@ async def human_teacher_upsert(data: dict) -> dict:
                     data.get("specializations", "[]"),
                     data.get("rate_per_hour", 30),
                     data.get("currency", "EUR"),
-                    data.get("email") or None,
+                    data.get("email", ""),
                 ),
             )
             await db.commit()
-            return {"success": True, "teacher": {"email": data.get("email") or None}}
+            return {"success": True, "teacher": {"email": data.get("email", "")}}
 
 
 async def human_teacher_list(available_only: bool = True) -> list[dict]:
@@ -503,14 +464,13 @@ async def student_upsert(data: dict[str, Any]) -> dict:
     async with get_db() as db:
         try:
             cur = await db.execute(
-                "INSERT INTO students (name, email, token, language, level, framework, notes) VALUES (?,?,?,?,?,?,?)",
+                "INSERT INTO students (name, email, token, language, level, notes) VALUES (?,?,?,?,?,?)",
                 (
                     data["name"],
-                    data.get("email") or None,
+                    data.get("email", ""),
                     data.get("token", ""),
                     data.get("language", "ja"),
                     data.get("level", "N4"),
-                    data.get("framework", "JLPT"),
                     data.get("notes", ""),
                 ),
             )
@@ -518,20 +478,17 @@ async def student_upsert(data: dict[str, Any]) -> dict:
             sid = cur.lastrowid
         except aiosqlite.IntegrityError:
             await db.execute(
-                "UPDATE students SET name=?, language=?, level=?, framework=?, notes=?, updated_at=datetime('now') WHERE email=?",
+                "UPDATE students SET name=?, language=?, level=?, notes=?, updated_at=datetime('now') WHERE email=?",
                 (
                     data["name"],
                     data.get("language", "ja"),
                     data.get("level", "N4"),
-                    data.get("framework", "JLPT"),
                     data.get("notes", ""),
-                    data.get("email") or None,
+                    data.get("email", ""),
                 ),
             )
             await db.commit()
-            cur = await db.execute(
-                "SELECT id FROM students WHERE email=?", (data.get("email") or None,)
-            )
+            cur = await db.execute("SELECT id FROM students WHERE email=?", (data["email"],))
             row = await cur.fetchone()
             sid = row["id"] if row else None
     return (
@@ -564,33 +521,6 @@ async def student_list(active_only: bool = True, class_id: int | None = None) ->
         return [dict(r) for r in await cur.fetchall()]
 
 
-async def student_update(student_id: int, data: dict[str, Any]) -> dict:
-    existing = await student_get(student_id)
-    if not existing.get("success"):
-        return existing
-    current = existing["student"]
-    merged = {**current, **{k: v for k, v in data.items() if v is not None}}
-    async with get_db() as db:
-        try:
-            await db.execute(
-                "UPDATE students SET name=?, email=?, language=?, level=?, framework=?, notes=?, active=?, updated_at=datetime('now') WHERE id=?",
-                (
-                    merged["name"],
-                    merged.get("email") or None,
-                    merged["language"],
-                    merged["level"],
-                    merged.get("framework", "JLPT"),
-                    merged["notes"],
-                    merged.get("active", 1),
-                    student_id,
-                ),
-            )
-            await db.commit()
-        except aiosqlite.IntegrityError as e:
-            return {"success": False, "error": str(e)}
-    return await student_get(student_id)
-
-
 async def student_delete(student_id: int) -> bool:
     async with get_db() as db:
         cur = await db.execute("DELETE FROM students WHERE id=?", (student_id,))
@@ -605,13 +535,12 @@ async def class_upsert(data: dict[str, Any]) -> dict:
     async with get_db() as db:
         try:
             cur = await db.execute(
-                "INSERT INTO classes (name, description, language, level, framework, schedule) VALUES (?,?,?,?,?,?)",
+                "INSERT INTO classes (name, description, language, level, schedule) VALUES (?,?,?,?,?)",
                 (
                     data["name"],
                     data.get("description", ""),
                     data.get("language", "ja"),
                     data.get("level", "N4"),
-                    data.get("framework", "JLPT"),
                     data.get("schedule", ""),
                 ),
             )
@@ -638,29 +567,6 @@ async def class_get(class_id: int) -> dict:
         return {"success": True, "class": dict(row)}
 
 
-async def class_update(class_id: int, data: dict[str, Any]) -> dict:
-    existing = await class_get(class_id)
-    if not existing.get("success"):
-        return existing
-    current = existing["class"]
-    merged = {**current, **{k: v for k, v in data.items() if v is not None}}
-    async with get_db() as db:
-        await db.execute(
-            "UPDATE classes SET name=?, description=?, language=?, level=?, framework=?, schedule=? WHERE id=?",
-            (
-                merged["name"],
-                merged["description"],
-                merged["language"],
-                merged["level"],
-                merged.get("framework", "JLPT"),
-                merged["schedule"],
-                class_id,
-            ),
-        )
-        await db.commit()
-    return await class_get(class_id)
-
-
 async def class_add_student(class_id: int, student_id: int) -> dict:
     async with get_db() as db:
         try:
@@ -681,45 +587,6 @@ async def class_remove_student(class_id: int, student_id: int) -> dict:
         )
         await db.commit()
     return {"success": cur.rowcount > 0}
-
-
-# ── Generated Content ──
-
-
-async def generated_content_save(data: dict) -> dict:
-    async with get_db() as db:
-        cur = await db.execute(
-            "INSERT INTO generated_content (module_id, content_type, framework, level, prompt, content) VALUES (?,?,?,?,?,?)",
-            (
-                data.get("module_id", 0),
-                data.get("content_type", "syllabus"),
-                data.get("framework", ""),
-                data.get("level", ""),
-                data.get("prompt", ""),
-                data.get("content", ""),
-            ),
-        )
-        await db.commit()
-        return {"success": True, "id": cur.lastrowid}
-
-
-async def generated_content_list(module_id: int = 0, content_type: str = "") -> list[dict]:
-    async with get_db() as db:
-        if module_id:
-            cur = await db.execute(
-                "SELECT * FROM generated_content WHERE module_id=? ORDER BY created_at DESC",
-                (module_id,),
-            )
-        elif content_type:
-            cur = await db.execute(
-                "SELECT * FROM generated_content WHERE content_type=? ORDER BY created_at DESC",
-                (content_type,),
-            )
-        else:
-            cur = await db.execute(
-                "SELECT * FROM generated_content ORDER BY created_at DESC LIMIT 50"
-            )
-        return [dict(r) for r in await cur.fetchall()]
 
 
 async def class_delete(class_id: int) -> bool:

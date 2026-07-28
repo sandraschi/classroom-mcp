@@ -46,6 +46,8 @@ classroom-mcp (:11105)         learnbot-mcp (:11101)
   upsert collision, learnbot-mcp bridge port/path) that shipped
   undetected because of this.
 - No `README.md`, `glama.json`, or `llms.txt`/`llms-full.txt`.
+- `assignment_create_with_lesson` doesn't distinguish "lesson generated"
+  from "learnbot-mcp unreachable" in its response — both look like success.
 
 ## What's Next
 

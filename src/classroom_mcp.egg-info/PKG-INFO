@@ -1,9 +1,9 @@
 Metadata-Version: 2.4
 Name: classroom-mcp
-Version: 0.1.0
+Version: 0.2.0
 Summary: Student and class management — roster, timetable, assignments, progress
 Requires-Python: >=3.12
-Requires-Dist: fastmcp<4,>=3.4.2
+Requires-Dist: fastmcp<4,>=3.4.4
 Requires-Dist: aiosqlite
 Requires-Dist: httpx
 Requires-Dist: pydantic>=2.0.0

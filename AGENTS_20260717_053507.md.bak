@@ -6,7 +6,7 @@
 - **Purpose**: Student, class, course, and teaching agent management for distance learning
 - **Owner**: Sandra Schipal, Vienna
 - **Ports**: Backend 11105, Frontend 11106
-- **Depends on**: learnbot-mcp (:11101) for lesson content delivery
+- **Depends on**: learnbot-mcp (:11104) for lesson content delivery
 
 ## Architecture
 

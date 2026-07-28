@@ -32,13 +32,11 @@
   `LEARNBOT_URL` defaulted to port `11104`, but learnbot-mcp actually runs
   on `11101`; and the request path was `/api/lessons/generate` (plural)
   against a route that's actually `/api/lesson/generate` (singular). Both
-  fixed. Also fixed: the call used to treat "learnbot unreachable" and
-  "lesson generation failed" the same as "no lesson attached," creating
-  the assignment anyway and reporting `success: True`. Now it returns
-  `success: False` with a specific error (unreachable / HTTP error /
-  learnbot-reported failure) and does not create the assignment at all if
-  lesson generation fails — since the tool's whole contract is "assignment
-  WITH lesson," a bare assignment isn't what was asked for.
+  fixed. Note: the call still silently treats "learnbot unreachable" and
+  "lesson generation failed" the same as "no lesson attached" — the
+  assignment is created either way with no error surfaced. Not yet decided
+  whether that should become an explicit failure or an explicit warning
+  flag in the response.
 
 ### Corrected
 - The `[0.1.0]` entry below claimed this repo added

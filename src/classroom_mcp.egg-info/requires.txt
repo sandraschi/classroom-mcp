@@ -1,4 +1,4 @@
-fastmcp<4,>=3.4.2
+fastmcp<4,>=3.4.4
 aiosqlite
 httpx
 pydantic>=2.0.0
