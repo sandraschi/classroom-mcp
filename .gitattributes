@@ -1,0 +1,4 @@
+# Fleet LF normalization — prevents Biome CRLF CI failures on webapps.
+* text=auto eol=lf
+*.ps1 text eol=crlf
+*.bat text eol=crlf
