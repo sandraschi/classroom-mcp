@@ -1,4 +1,4 @@
-"""Starlette REST API — student, class, assignment, progress endpoints."""
+"""Starlette REST API - student, class, assignment, progress endpoints."""
 
 from __future__ import annotations
 
@@ -51,8 +51,45 @@ async def api_health(request: Request) -> JSONResponse:
     )
 
 
+async def api_status(request: Request) -> JSONResponse:
+    uptime = (
+        __import__("datetime").datetime.now(__import__("datetime").timezone.utc) - _START_TIME
+    ).total_seconds()
+    try:
+        from classroom_mcp.tools import mcp as _mcp
+
+        tool_count = len(await _mcp.list_tools())
+    except Exception:
+        tool_count = -1
+    return JSONResponse(
+        {
+            "status": "ok",
+            "server": cfg.server_name,
+            "version": __version__,
+            "uptime_seconds": int(uptime),
+            "backend_port": cfg.backend_port,
+            "frontend_port": cfg.frontend_port,
+            "db_path": cfg.db_path,
+            "learnbot_url": cfg.learnbot_url,
+            "tool_count": tool_count,
+        }
+    )
+
+
+async def api_shutdown(request: Request) -> JSONResponse:
+    import asyncio as _asyncio
+    import os as _os
+
+    async def _exit_later() -> None:
+        await _asyncio.sleep(0.5)
+        _os._exit(0)
+
+    _asyncio.create_task(_exit_later())
+    return JSONResponse({"success": True, "message": "Shutting down in 0.5 s."})
+
+
 def _make_routes():
-    """Build route list — avoids import-time eval of async functions."""
+    """Build route list - avoids import-time eval of async functions."""
 
     async def api_student_list(request: Request) -> JSONResponse:
         active = request.query_params.get("active", "1") == "1"
@@ -127,7 +164,7 @@ def _make_routes():
             return HTMLResponse(index.read_text(encoding="utf-8"))
         return HTMLResponse("<h1>Frontend not built</h1>", status_code=503)
 
-    routes = [
+    routes: list = [
         Route("/health", api_health),
         Route("/api/health", api_health),
         Route("/api/students", api_student_list),
@@ -144,6 +181,8 @@ def _make_routes():
         Route("/api/assignments/{id}", api_assignment_delete, methods=["DELETE"]),
         Route("/api/progress", api_progress),
         Route("/api/progress", api_progress_record, methods=["POST"]),
+        Route("/api/status", api_status),
+        Route("/api/shutdown", api_shutdown, methods=["POST"]),
     ]
     dist = Path(__file__).resolve().parents[2] / "web_sota" / "dist"
     if dist.is_dir() and (dist / "index.html").is_file():

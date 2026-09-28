@@ -1,4 +1,4 @@
-"""Database layer — aiosqlite, schema, CRUD helpers."""
+"""Database layer - aiosqlite, schema, CRUD helpers."""
 
 from __future__ import annotations
 
@@ -45,9 +45,7 @@ async def _get_pooled_connection() -> aiosqlite.Connection:
     os.makedirs(os.path.dirname(cfg.db_path) or ".", exist_ok=True)
     async with _db_pool_lock:
         if _db_conn is None:
-            pending = aiosqlite.connect(cfg.db_path)
-            pending.daemon = True
-            _db_conn = await pending
+            _db_conn = await aiosqlite.connect(cfg.db_path)
             _db_conn.row_factory = aiosqlite.Row
             await _db_conn.execute("PRAGMA journal_mode=WAL")
             await _db_conn.execute("PRAGMA foreign_keys=ON")
@@ -369,7 +367,14 @@ async def agent_upsert(data: dict) -> dict:
             )
             await db.commit()
             return {"success": True, "agent": {"id": cur.lastrowid}}
-        except Exception:
+        except aiosqlite.IntegrityError:
+            # Duplicate (course_id, name) — fall through to the update path.
+            # Any other error must surface, not masquerade as success.
+            pass
+        except Exception as e:
+            await db.rollback()
+            return {"success": False, "error": str(e)}
+        try:
             await db.execute(
                 "UPDATE teaching_agents SET role=?, persona=?, model=? WHERE course_id=? AND name=?",
                 (
@@ -382,6 +387,9 @@ async def agent_upsert(data: dict) -> dict:
             )
             await db.commit()
             return {"success": True, "agent": {"name": data["name"]}}
+        except Exception as e:
+            await db.rollback()
+            return {"success": False, "error": str(e)}
 
 
 async def agent_list(course_id: int) -> list[dict]:

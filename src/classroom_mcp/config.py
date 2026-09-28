@@ -1,4 +1,4 @@
-"""Settings — pydantic-settings with .env support."""
+"""Settings - pydantic-settings with .env support."""
 
 from __future__ import annotations
 
@@ -32,7 +32,7 @@ def clear_settings_cache() -> None:
     """Force the next get_settings() call to re-read env vars.
 
     The `from classroom_mcp.config import _settings; _settings = None` pattern
-    does NOT do this — that rebinds a local name, not this module's global.
+    does NOT do this - that rebinds a local name, not this module's global.
     Tests must call this function instead.
     """
     global _settings
