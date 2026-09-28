@@ -17,6 +17,14 @@ fmt:
 test:
     uv run pytest tests/ -q -v
 
+ci:
+    uv run ruff check src/
+    uv run ruff format src/ --check
+    uv run pytest tests/ -q
+
+mcpb-pack:
+    powershell.exe -NoProfile -File scripts/mcpb-pack.ps1
+
 deps:
     uv sync
 

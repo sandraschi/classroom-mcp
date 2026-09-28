@@ -10,3 +10,10 @@ web_sota/node_modules/
 web_sota/dist/
 .ruff_cache/
 .pytest_cache/
+.coverage
+htmlcov/
+reports/
+*.mcpb
+*.bak
+*.bak.*
+*.egg-info/
