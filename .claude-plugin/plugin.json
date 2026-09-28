@@ -1,0 +1,6 @@
+{
+  "name": "classroom-mcp",
+  "version": "0.2.0",
+  "description": "Student, class, course and teaching-agent management tools",
+  "hooks": "../hooks/hooks.json"
+}

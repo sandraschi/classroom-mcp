@@ -1,0 +1,16 @@
+# classroom-mcp — Cursor rules
+
+Python 3.12+, `uv run` (never naked `python`). Ruff line-length 100.
+MCP tools: `Annotated[..., Field(description=...)]` params, `## Return Format` +
+`## Examples` docstrings, dialogic `{success, message}` returns.
+Upsert paths narrow `except aiosqlite.IntegrityError` — never bare `except Exception` on inserts.
+ASCII-only prose (hyphens, not em dashes).
+
+## Session Context (classroom-mcp)
+
+Before starting work: call `status()` for health, then `student_list()` /
+`class_list()` / `course_list()` to ground IDs — never invent row IDs.
+Prefer `*_update` by ID over delete-and-recreate (keeps FK relationships).
+
+At end of work: run `just ci` (ruff + format check + pytest); record graded
+work with `progress_record()`; summarize counts.
