@@ -1,6 +1,6 @@
 # classroom-mcp
 
-Student and class management for the fleet — roster, timetable, courses, courseware, teaching agents, and progress tracking, exposed as ~42 MCP tools plus a REST API.
+Student and class management for the fleet — roster, timetable, courses, courseware, teaching agents, and progress tracking, exposed as 45 MCP tools plus a REST API.
 
 ## What's here
 
@@ -18,7 +18,7 @@ REST API on port **11105** (uvicorn/Starlette, CORS enabled, SPA serving). MCP t
 
 ## Status
 
-Two regression tests exist (`tests/test_student_upsert.py`, `tests/test_learnbot_bridge.py`) covering an email-upsert collision bug and a learnbot-mcp bridge port/path bug that both shipped undetected before the tests were written — see `CHANGELOG.md` (0.2.0). Both currently pass. Test coverage beyond those two regressions is thin; most of the ~42 tools have no automated test.
+Two regression tests exist (`tests/test_student_upsert.py`, `tests/test_learnbot_bridge.py`) covering an email-upsert collision bug and a learnbot-mcp bridge port/path bug that both shipped undetected before the tests were written — see `CHANGELOG.md` (0.2.0). Both currently pass. Test coverage beyond those two regressions is thin; most of the 45 tools have no automated test.
 
 See `TODO.md` for what's planned next — webapp pages (roster, courses, timetable, progress dashboard), a student-facing view, and broader test coverage are the open items.
 

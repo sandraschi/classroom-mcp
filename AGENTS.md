@@ -22,10 +22,13 @@ classroom-mcp (management)
   └── Progress — scores, time spent, vocab mastery
 ```
 
-## MCP Tools (28)
+## MCP Tools (45 + 1 prompt + 1 resource)
+
+### Server
+- `help`, `status`, `server_shutdown`
 
 ### Students
-- `student_create`, `student_get`, `student_list`, `student_delete`
+- `student_create`, `student_get`, `student_list`, `student_update`, `student_delete`
 
 ### Classes
 - `class_create`, `class_list`, `class_get`, `class_add_student`, `class_remove_student`, `class_delete`
@@ -47,6 +50,22 @@ classroom-mcp (management)
 
 ### Teaching Agents
 - `agent_create`, `agent_list`, `agent_delete`
+
+### AI generation
+- `syllabus_generate`, `courseware_generate_ai`, `syllabus_list`
+
+### Prompt / resource
+- `plan_lesson` prompt, `classroom://status` resource
+
+## Processes (no NSSM service; stdio + REST run separately)
+
+- MCP stdio: `uv run python -m classroom_mcp` (lifespan runs `init_db()`)
+- REST daemon: `uv run python -m classroom_mcp.api` → :11105
+  (`GET /api/health`, `GET /api/status`, `POST /api/shutdown`)
+- Launcher: `.\start.ps1` (clears :11105 zombies, TCP-polls readiness)
+- DB: `data/classroom.db` (aiosqlite, WAL) — single writer per process;
+  do not run two REST daemons on the same DB file.
+- Bridge: learnbot-mcp :11101 via `LEARNBOT_URL` (optional)
 
 ## Key Files
 

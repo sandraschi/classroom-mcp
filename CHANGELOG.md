@@ -1,5 +1,29 @@
 # Changelog
 
+## [0.2.1] — 2026-09-28 (assfix)
+
+### Added
+- `help`, `status`, `server_shutdown` MCP tools; `plan_lesson` prompt;
+  `classroom://status` resource.
+- `GET /api/status`, `POST /api/shutdown` REST endpoints.
+- `start.ps1`/`start.bat` launcher; `.github/workflows/ci.yml`
+  (ruff, format check, pyright, pytest); `.pre-commit-config.yaml`;
+  session-injection files (`.cursorrules`, `.windsurfrules`, copilot
+  instructions, Claude plugin + hooks, opencode/antigravity skills).
+- `llms.txt`/`llms-full.txt`, `glama.json`, `manifest.json`, `CLAUDE.md`,
+  `renovate.json`, `skills/classroom/SKILL.md`, `just ci` + `just mcpb-pack`.
+- Coverage gate (`--cov-fail-under=30`, actual 38%) via pytest-cov;
+  `T20` (no-print) ruff rule with test/script exemptions.
+
+### Fixed
+- `.env.example` `LEARNBOT_URL` still pointed at port 11104 (fixed to 11101).
+- `agent_upsert` narrowed to `except aiosqlite.IntegrityError` for the
+  update fallback; other errors roll back and return `success: False`.
+- `_version.py` synced to 0.2.0; removed bogus `Connection.daemon`
+  assignment; typed the Starlette route list (pyright clean).
+- All 45 tools now use `Annotated[..., Field(...)]` params with
+  `## Return Format` / `## Examples` docstrings and dialogic messages.
+
 ## [0.2.0] — 2026-07-16
 
 ### Added

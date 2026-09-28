@@ -1,0 +1,49 @@
+# classroom-mcp — full reference (v0.2.0)
+
+Student, class, course, and teaching-agent management for distance learning.
+Owner: Sandra Schipal, Vienna. Depends on learnbot-mcp (:11101) for lesson content (optional).
+
+## Ports
+
+- Backend (Starlette REST + SPA): 11105
+- Frontend (reserved; webapp not yet built): 11106
+
+## MCP tools (45, stdio via `python -m classroom_mcp`)
+
+Students: student_create, student_get, student_list, student_update, student_delete
+Classes: class_create, class_list, class_get, class_update, class_add_student,
+  class_remove_student, class_delete
+Assignments: assignment_create, assignment_list, assignment_delete,
+  assignment_create_with_lesson (learnbot bridge, strict contract: lesson fails
+  => success False, no assignment created)
+Progress: progress_record, progress_list
+Courses: course_create, course_list, course_get, course_update, course_delete
+Modules: module_create, module_list, module_delete
+Courseware: courseware_create, courseware_list, courseware_delete
+Teaching agents: agent_create, agent_list, agent_delete
+Human teachers + referrals: human_teacher_create/list/get/delete,
+  referral_create/list/update_status
+AI generation: syllabus_generate, courseware_generate_ai, syllabus_list
+  (framework-aware: JLPT, CEFR, HSK, DELF, DALF, DELE, Goethe, TOEFL, IELTS)
+Server: help, status, server_shutdown
+Prompt: plan_lesson(topic, level, framework). Resource: classroom://status.
+
+## REST endpoints (`python -m classroom_mcp.api`, :11105)
+
+GET /health, GET /api/health, GET /api/status, POST /api/shutdown,
+/api/students (GET/POST), /api/students/{id} (GET/DELETE),
+/api/classes (GET/POST), /api/classes/{id} (GET/DELETE),
+/api/classes/{id}/students (POST), /api/assignments (GET/POST),
+/api/assignments/{id} (DELETE), /api/progress (GET/POST).
+CORS: explicit Tauri origins + Tailscale/LAN regex. SPA served from web_sota/dist when built.
+
+## Config vars (.env; see .env.example)
+
+BACKEND_PORT=11105, FRONTEND_PORT=11106, LOG_LEVEL=INFO,
+DB_PATH=data/classroom.db, CLASSROOM_API_KEY=, LEARNBOT_URL=http://127.0.0.1:11101
+
+## Architecture
+
+SQLite (aiosqlite, WAL) holds courses > modules > courseware, teaching agents,
+human teachers + referrals, students + classes, assignments + progress.
+LLM calls go via learnbot-mcp /api/llm/chat first, direct Ollama :11434 fallback.

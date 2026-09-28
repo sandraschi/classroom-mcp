@@ -1,6 +1,6 @@
 # classroom-mcp — Status
 
-**Updated**: 2026-07-16
+**Updated**: 2026-09-28
 
 ## Current State
 
@@ -18,7 +18,9 @@
 | AI curriculum generation | ✅ | `syllabus_generate`, `courseware_generate_ai` — framework-aware (CEFR, HSK, DELF, DELE, Goethe, JLPT) |
 | learnbot-mcp bridge | ✅ | `assignment_create_with_lesson` calls learnbot-mcp's lesson_generate over LEARNBOT_URL |
 | REST API | ✅ | All CRUD endpoints on port 11105, CORS, SPA serving |
-| MCP tools | ✅ | ~41 tools covering all entities |
+| MCP tools | ✅ | 45 tools + plan_lesson prompt + classroom://status resource |
+| Server ops | ✅ | help, status, server_shutdown; REST /api/status + POST /api/shutdown |
+| Repo hygiene | ✅ | start.ps1/bat, CI (ruff/format/pyright/pytest), pre-commit, session files, llms, glama |
 | Git | ✅ | Initialized, pushed to GitHub (private) |
 
 ## Architecture
@@ -42,6 +44,14 @@ classroom-mcp (:11105)         learnbot-mcp (:11101)
 
 ## Known gaps
 
+- Webapp not built — `web_sota/` is a stub (no package.json). Roster, courses,
+  timetable, progress dashboard still open (see TODO.md P1).
+- No portmanteau refactor (45 individual tools) and no stdio→HTTP proxy —
+  deferred as breaking/architectural work, not drift.
+- Prefab UI (`prefab-ui` dep + `app=True` cards) deferred — package
+  unverifiable offline; adding an unresolvable dep would break `uv sync`.
+- MCPB pack needs the DXT desktop app or `mcpb` CLI (`just mcpb-pack`
+  validates and then reports the manual step).
 - No tests — `tests/` is empty. See CHANGELOG 0.2.0 for two bugs (email
   upsert collision, learnbot-mcp bridge port/path) that shipped
   undetected because of this.
