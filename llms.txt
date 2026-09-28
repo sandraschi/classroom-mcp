@@ -1,0 +1,6 @@
+# classroom-mcp
+
+Student and class management for the fleet — roster, courses, teaching agents,
+AI syllabus generation, and progress tracking. 45 MCP tools (stdio) + REST API (:11105).
+
+Full reference: [llms-full.txt](llms-full.txt)

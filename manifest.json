@@ -1,0 +1,14 @@
+{
+  "identifier": "classroom-mcp",
+  "name": "classroom-mcp",
+  "version": "0.2.0",
+  "description": "Student and class management — roster, courses, teaching agents, AI syllabus generation, progress tracking.",
+  "server": {
+    "entry_point": "classroom_mcp.tools",
+    "transport": "stdio"
+  },
+  "rest_api": {
+    "port": 11105,
+    "module": "classroom_mcp.api:build_app"
+  }
+}
