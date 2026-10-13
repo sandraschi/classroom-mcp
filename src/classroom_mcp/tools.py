@@ -132,6 +132,7 @@ from classroom_mcp.database import (
 from classroom_mcp.database import (
     student_upsert as _upsert_s,
 )
+from classroom_mcp.tool_log_middleware import ToolActivityMiddleware
 
 log = logging.getLogger(__name__)
 cfg = get_settings()
@@ -169,6 +170,7 @@ mcp = FastMCP(
     instructions="Student and class management for fleet learning services",
     lifespan=_lifespan,
 )
+mcp.add_middleware(ToolActivityMiddleware())
 
 
 @mcp.tool(annotations=_READ_ONLY)
