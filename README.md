@@ -16,6 +16,9 @@ Student and class management for the fleet — roster, timetable, courses, cours
 
 REST API on port **11105** (uvicorn/Starlette, CORS enabled, SPA serving). MCP tools run over stdio.
 
+Log buffer: ring buffer (`CLASSROOM_LOG_MAX_ENTRIES`, default 2000) behind
+`GET /api/logs` (+ `/stats`, `/export`, `DELETE /api/logs`) and the `/logs` page.
+
 ## Status
 
 Two regression tests exist (`tests/test_student_upsert.py`, `tests/test_learnbot_bridge.py`) covering an email-upsert collision bug and a learnbot-mcp bridge port/path bug that both shipped undetected before the tests were written — see `CHANGELOG.md` (0.2.0). Both currently pass. Test coverage beyond those two regressions is thin; most of the 45 tools have no automated test.

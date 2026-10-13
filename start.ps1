@@ -50,7 +50,7 @@ if (-not $ready) {
 }
 Write-Host "Backend ready on http://127.0.0.1:$Port" -ForegroundColor Green
 
-# 4. Browser auto-open after 200.
+# 4. Browser auto-open (root status page; /api/health for raw JSON).
 if (-not $NoBrowser) {
-  Start-Process "http://127.0.0.1:$Port"
+  Start-Process "http://127.0.0.1:$Port/"
 }
